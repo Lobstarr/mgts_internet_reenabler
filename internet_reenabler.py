@@ -8,8 +8,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.select import Select
 import subprocess
 import time
-import multiprocessing
-
 
 def check_route_1_1(address):
     proc = subprocess.Popen("tracert -w 1000 -d %s" % address, shell=True,
@@ -47,20 +45,28 @@ def ping_ip(address):
 
 def fix_router_settings():
     chrome_options = Options()
-    # chrome_options.add_argument("--disable-extensions")
-    # chrome_options.add_argument("--disable-gpu")
-    # chrome_options.add_argument("--no-sandbox") # linux only
-    # chrome_options.add_argument("--headless")
-    # chrome_options.headless = True # also works
-    # driver = webdriver.Chrome(service=Service(ChromeDriverManager(cache_valid_range=365)),
-    #                           options=chrome_options)
-    chromedriver_path = 'C:\\ESD\\chromedriver.exe'
-    if not chromedriver_path:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),
-                                  options=chrome_options)
+    sys_win = True
+    if sys_win:
+        # chrome_options.add_argument("--disable-extensions")
+        # chrome_options.add_argument("--disable-gpu")
+        # chrome_options.add_argument("--no-sandbox") # linux only
+        # chrome_options.add_argument("--headless")
+        # chrome_options.headless = True # also works
+        chromedriver_path = 'C:\\ESD\\chromedriver.exe'
+        if not chromedriver_path:
+            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),
+                                      options=chrome_options)
+        else:
+            driver = webdriver.Chrome(service=Service(chromedriver_path),
+                                      options=chrome_options)
     else:
-        driver = webdriver.Chrome(service=Service(chromedriver_path),
-                                  options=chrome_options)
+        # chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--disable-gpu")
+        # chrome_options.add_argument("--no-sandbox") # linux only
+        chrome_options.add_argument("--headless")
+        # chrome_options.headless = True # also works
+        driver = webdriver.Chrome(options=chrome_options)
+
     router_address = "http://192.168.1.1"
     driver.get(router_address)
     assert "http://192.168.1.1/" == driver.current_url
