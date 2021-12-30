@@ -8,6 +8,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.select import Select
 import subprocess
 import time
+import multiprocessing
 
 
 def check_route_1_1(address):
@@ -19,8 +20,10 @@ def check_route_1_1(address):
             pass
         else:
             line_text_decoded = line.strip().decode('866')
-            line_text_list = line_text_decoded.split('  ')
-            if '192.168.1.1' in line_text_list:
+            line_text_list = [i.strip() for i in line_text_decoded.split(' ') if i.strip() != '']
+            if line_text_list:
+                print(line_text_list)
+            if '192.168.1.1'.strip() in line_text_list:
                 print('Route leads to 192.168.1.1')
                 return True
         if not line:
@@ -45,9 +48,9 @@ def ping_ip(address):
 def fix_router_settings():
     chrome_options = Options()
     # chrome_options.add_argument("--disable-extensions")
-    chrome_options.add_argument("--disable-gpu")
+    # chrome_options.add_argument("--disable-gpu")
     # chrome_options.add_argument("--no-sandbox") # linux only
-    chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--headless")
     # chrome_options.headless = True # also works
     # driver = webdriver.Chrome(service=Service(ChromeDriverManager(cache_valid_range=365)),
     #                           options=chrome_options)
@@ -93,11 +96,14 @@ def fix_router_settings():
     print('Opened dhcp-port settings')
     time.sleep(1)
 
-    first_dhcp_port_select = Select(driver.find_element(By.XPATH, '//*[@id="Frm_DhcpModeSelect0"]'))
+    first_dhcp_port = driver.find_element(By.XPATH, '//*[@id="Frm_DhcpModeSelect0"]')
+    first_dhcp_port_select = Select(first_dhcp_port)
     first_dhcp_port_select.select_by_visible_text('Wan')
     print('Wan on port0 selected')
     time.sleep(1)
 
+    driver.set_page_load_timeout(15)
+    # first_dhcp_port.submit()
     submit_dhcp_ports = driver.find_element(By.XPATH, '//*[@id="Btn_Submit"]')
     # submit_dhcp_ports.click()
     submit_dhcp_ports.send_keys(Keys.ENTER)
@@ -109,7 +115,7 @@ def fix_router_settings():
     print('Browser closed')
 
 
-if __name__ == '__main__':
+def check_internet_and_fix():
     ping_test_ips = ['8.8.8.8', '77.88.8.8', '192.168.166.1']
     ping_result = False
     for ip in ping_test_ips:
@@ -118,3 +124,14 @@ if __name__ == '__main__':
                 ping_result = False
     if not ping_result and check_route_1_1(ping_test_ips[0]):
         fix_router_settings()
+
+        return False
+    else:
+        return True
+
+
+if __name__ == '__main__':
+    i = 0
+    while not check_internet_and_fix() or i < 5:
+        time.sleep(15)
+        i += 1
