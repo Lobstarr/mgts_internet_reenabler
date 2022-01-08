@@ -8,8 +8,11 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.select import Select
 import subprocess
 import time
+import platform
+
 
 def check_route_1_1(address):
+
     proc = subprocess.Popen("tracert -w 1000 -d %s" % address, shell=True,
                             stdout=subprocess.PIPE)
     while True:
@@ -32,21 +35,31 @@ def check_route_1_1(address):
 
 
 def ping_ip(address):
-    try:
-        proc = subprocess.check_output("ping -n 1 %s" % address, shell=True)
-        text = proc.decode('866')
-        print('PING to', address, 'successful')
+    if platform.system().lower() == 'windows':
+        packets_param = '-n'
+    else:
+        packets_param = '-c'
 
-        return True
+    # Building the command. Ex: "ping -c 1 google.com"
+    command = ['ping',  packets_param, '1', '-w', '1000', address]
+
+    try:
+        proc = subprocess.check_output(command, shell=True)
+        text = proc.decode('866')
+        if proc:
+            print('PING to', address, 'successful')
+            return True
+        else:
+            print('PING to', address, 'failed')
+            return False
     except:
-        print('PING to', address, 'failed')
+        print('PING to', address, 'exited with error')
         return False
 
 
 def fix_router_settings():
     chrome_options = Options()
-    sys_win = True
-    if sys_win:
+    if platform.system().lower() == 'windows':
         # chrome_options.add_argument("--disable-extensions")
         # chrome_options.add_argument("--disable-gpu")
         # chrome_options.add_argument("--no-sandbox") # linux only
