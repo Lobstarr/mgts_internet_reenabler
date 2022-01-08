@@ -11,27 +11,35 @@ import time
 import platform
 
 
-def check_route_1_1(address):
+def check_route(address):
+    if platform.system().lower() == 'windows':
+        command = ['tracert', '-w', '1000', '-h', '10', '-d', address]
+        encoding = '866'
+        shell = True
+    else:
+        command = ['traceroute', '-m', '10', '-n', address]
+        encoding = 'UTF-8'
+        shell = False
 
-    proc = subprocess.Popen("tracert -w 1000 -d %s" % address, shell=True,
+    proc = subprocess.Popen(command, shell=shell,
                             stdout=subprocess.PIPE)
     while True:
         line = proc.stdout.readline()
         if line.strip() == "":
             pass
         else:
-            line_text_decoded = line.strip().decode('866')
+            line_text_decoded = line.strip().decode(encoding)
             line_text_list = [i.strip() for i in line_text_decoded.split(' ') if i.strip() != '']
             if line_text_list:
                 print(line_text_list)
             if '192.168.1.1'.strip() in line_text_list:
                 print('Route leads to 192.168.1.1')
-                return True
+                return False
         if not line:
             break
     proc.wait()
     print('Route normal')
-    return False
+    return True
 
 
 def ping_ip(address):
@@ -141,8 +149,8 @@ def check_internet_and_fix():
         for i in range(2):
             if not ping_ip(ip):
                 ping_result = False
-    if not ping_result and check_route_1_1(ping_test_ips[0]):
-        fix_router_settings()
+    if not ping_result and not check_route(ping_test_ips[0]):
+        # fix_router_settings()
 
         return False
     else:
@@ -151,6 +159,8 @@ def check_internet_and_fix():
 
 if __name__ == '__main__':
     i = 0
-    while not check_internet_and_fix() or i < 5:
+
+    while not check_internet_and_fix() and i < 5:
         time.sleep(15)
         i += 1
+    print('Done')
