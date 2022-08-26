@@ -9,6 +9,8 @@ from selenium.webdriver.support.select import Select
 import subprocess
 import time
 import platform
+import configparser
+from os import path
 
 
 def check_route(address):
@@ -49,7 +51,7 @@ def ping_ip(address):
         packets_param = '-c'
 
     # Building the command. Ex: "ping -c 1 google.com"
-    command = ['ping',  packets_param, '1', '-w', '1000', address]
+    command = ['ping', packets_param, '1', '-w', '1000', address]
 
     try:
         proc = subprocess.check_output(command, shell=True)
@@ -73,7 +75,7 @@ def fix_router_settings():
         # chrome_options.add_argument("--no-sandbox") # linux only
         # chrome_options.add_argument("--headless")
         # chrome_options.headless = True # also works
-        chromedriver_path = 'C:\\ESD\\chromedriver.exe'
+
         if not chromedriver_path:
             driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),
                                       options=chrome_options)
@@ -142,8 +144,7 @@ def fix_router_settings():
     print('Browser closed')
 
 
-def check_internet_and_fix():
-    ping_test_ips = ['8.8.8.8', '77.88.8.8', '192.168.166.1']
+def check_internet_and_fix(ping_test_ips):
     ping_result = False
     for ip in ping_test_ips:
         for i in range(2):
@@ -157,10 +158,26 @@ def check_internet_and_fix():
         return True
 
 
-if __name__ == '__main__':
-    i = 0
+def generate_config(filename):
+    with open(filename, 'w+') as file:
+        config_template = ''
+        file.write(config_template)
 
-    while not check_internet_and_fix() and i < 5:
+
+if __name__ == '__main__':
+    config_filename = 'internet_reenabler.ini'
+    if not path.isfile(config_filename):
+        generate_config(config_filename)
+
+    config = configparser.ConfigParser()
+    config.read('internet_reenabler.ini')
+
+    test_ips_with_ping = config['global']['test_ips_with_ping'].split(',')
+    chromedriver_path = config['global']['chromedriver_path']
+    retries = int(config['global']['retries'])
+
+    for this_try in range(retries):
+        if check_internet_and_fix(test_ips_with_ping):
+            break
         time.sleep(15)
-        i += 1
     print('Done')
